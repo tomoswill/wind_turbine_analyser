@@ -15,31 +15,27 @@ logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 
 class DataLogAnalyserBase(ABC):
     """The Data Log Analyser Base"""
+    def __init__(self, _options, _column_definition, _read_csv_kwargs):
+        self.cvs_directory = _options['cvs_directory']
+        self.column_definition = _column_definition
+        self.read_csv_kwargs = _read_csv_kwargs
+
+    @property
+    def columns(self):
+        return list(self.column_definition.keys())
+
     class ColumnNoExist(Exception):
         pass
 
     class NoFilesException(Exception):
         pass
 
-    def __init__(self, _options):
-        self.cvs_directory = _options['cvs_directory']
-
-    @property
-    @abstractmethod
-    def _read_csv_kwargs(self):
-        raise NotImplementedError()
-
-    @property
-    @abstractmethod
-    def _column_definition(self):
-        raise NotImplementedError()
-
     @abstractmethod
     def _process_df(self, df):
-        raise NotImplementedError()
+        pass
 
     def _columns_by_type(self, ty):
-        return [col for col, t in self._column_definition.items() if t == ty]
+        return [col for col, t in self.column_definition.items() if t == ty]
 
     def _read_csv_logs(self):
         csv_paths = glob.glob(os.path.join(self.cvs_directory, "*.csv"))
@@ -50,15 +46,11 @@ class DataLogAnalyserBase(ABC):
             log.debug('Reading file %s', file)
             try:
                 yield self._process_df(
-                    pd.read_csv(file, **self._read_csv_kwargs),
+                    pd.read_csv(file, **self.read_csv_kwargs),
                 )
             except pd.errors.ParserError:
                 log.exception('Error Reading file %s', file)
                 continue
-
-    @property
-    def columns(self):
-        return list(self._column_definition.keys())
 
     def plot_scatter_graph(self, x, y):
         if not set(self.columns).issuperset((x, y)):
@@ -71,22 +63,24 @@ class DataLogAnalyserBase(ABC):
 
 class FutureEnergyDataLogAnalyser(DataLogAnalyserBase):
     """The Future Energy Wind Turbine Data Log Analyser"""
-    _column_definition = {
-        'Date_Time': 'datetime',
-        'Windspeed MPS': 'numeric',
-        'Wind Direction': 'numeric',
-        'RPM': 'numeric',
-        'ref RPM': 'numeric',
-        'TSR': 'numeric',
-        'Power': 'numeric',
-        'Inhibit State': 'numeric',
-        'MPS used for TSR': 'numeric',
-    }
-    _read_csv_kwargs = {
-        'header': 3,
-        'error_bad_lines': False,
-        'warn_bad_lines': False,
-    }
+    def __init__(self, _options):
+        _column_definition = {
+            'Date_Time': 'datetime',
+            'Windspeed MPS': 'numeric',
+            'Wind Direction': 'numeric',
+            'RPM': 'numeric',
+            'ref RPM': 'numeric',
+            'TSR': 'numeric',
+            'Power': 'numeric',
+            'Inhibit State': 'numeric',
+            'MPS used for TSR': 'numeric',
+        }
+        _read_csv_kwargs = {
+            'header': 3,
+            'error_bad_lines': False,
+            'warn_bad_lines': False,
+        }
+        super().__init__(_options, _column_definition, _read_csv_kwargs)
 
     def _process_df(self, df):
         # strict parse datetime columns
