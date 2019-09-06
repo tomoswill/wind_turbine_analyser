@@ -60,6 +60,7 @@ class DataLogAnalyserBase(ABC):
         ax = plt.gca()
         for df in self._read_csv_logs():
             df.plot.scatter(x, y, ax=ax, title=title)
+        ax.grid(True)
         if display:
             plt.show()
         if save:
