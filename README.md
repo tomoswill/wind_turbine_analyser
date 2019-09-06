@@ -10,6 +10,8 @@ optional arguments:
   -h, --help            show this help message and exit
   --cvs_dir CVS_DIRECTORY
                         Directory path to CVS data log files
+  --save                Output the plot to PNG
+  --no-display          Do not interactively display the plot
 ```
 ## Installation
 ### Linux

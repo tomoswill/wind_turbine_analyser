@@ -5,6 +5,8 @@ import sys
 import argparse
 import glob
 import os
+import time
+import uuid
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -52,13 +54,22 @@ class DataLogAnalyserBase(ABC):
                 log.exception('Error Reading file %s', file)
                 continue
 
-    def plot_scatter_graph(self, x, y):
+    def plot_scatter_graph(self, x, y, title, save=True, display=False):
         if not set(self.columns).issuperset((x, y)):
             raise DataLogAnalyserBase.ColumnNoExist()
         ax = plt.gca()
         for df in self._read_csv_logs():
-            df.plot.scatter(x, y, ax=ax)
-        plt.show()
+            df.plot.scatter(x, y, ax=ax, title=title)
+        if display:
+            plt.show()
+        if save:
+            filename = '{time}-{uuid}-{x}-{y}.png'.format(
+                time=time.strftime("%Y%m%d-%H%M"),
+                uuid=uuid.uuid4().hex[:8],
+                x=x.replace(' ', '_'),
+                y=y.replace(' ', '_'),)
+            log.info('Saving as "{}"'.format(filename))
+            ax.get_figure().savefig(filename)
 
 
 class FutureEnergyDataLogAnalyser(DataLogAnalyserBase):
@@ -100,6 +111,10 @@ if __name__ == '__main__':
         description='The Future Energy Wind Turbine Data Log Analyser')
     parser.add_argument('--cvs_dir', dest='cvs_directory', required=True,
                         help='Directory path to CVS data log files')
+    parser.add_argument('--save', dest='save', action='store_true',
+                        help='Output the plot to PNG')
+    parser.add_argument('--no-display', dest='display', action='store_false',
+                        help='Do not interactively display the plot')
     args = parser.parse_args()
     log.info('Args %s', args)
 
@@ -107,4 +122,8 @@ if __name__ == '__main__':
         'cvs_directory': os.path.abspath(args.cvs_directory),
     }
     analyser = FutureEnergyDataLogAnalyser(options)
-    analyser.plot_scatter_graph(x='Windspeed MPS', y='Power')
+    analyser.plot_scatter_graph(x='Windspeed MPS',
+                                y='Power',
+                                title='Windspeed vs. Power',
+                                save=args.save,
+                                display=args.display)
