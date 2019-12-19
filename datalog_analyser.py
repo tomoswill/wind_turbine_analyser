@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-from abc import ABC, abstractmethod
+import argparse
 import logging
 import sys
-import argparse
-import glob
-import os
 import time
 import uuid
-import pandas as pd
+from abc import ABC, abstractmethod
+from pathlib import Path
+
 import matplotlib.pyplot as plt
+import pandas as pd
 
 log = logging.getLogger('DataLogAnalyser')
 log.setLevel(logging.DEBUG)
@@ -19,8 +19,10 @@ class DataLogAnalyserBase(ABC):
     """The Data Log Analyser Base"""
     def __init__(self, _options, _column_definition, _read_csv_kwargs):
         self.cvs_directory = _options['cvs_directory']
+        self.cvs_file_names = _options['cvs_file_names'] if 'cvs_file_names' in _options else None
         self.column_definition = _column_definition
         self.read_csv_kwargs = _read_csv_kwargs
+        self.glob_csv_pattern = '*.csv'
 
     @property
     def columns(self):
@@ -40,12 +42,18 @@ class DataLogAnalyserBase(ABC):
         return [col for col, t in self.column_definition.items() if t == ty]
 
     def _read_csv_logs(self):
-        csv_paths = glob.glob(os.path.join(self.cvs_directory, "*.csv"))
-        if len(csv_paths) == 0:
-            raise DataLogAnalyserBase.NoFilesException(
-                'No *.csv files found in {}'.format(self.cvs_directory))
+        if self.cvs_file_names is None:
+            csv_paths = list(sorted(Path(self.cvs_directory).glob(self.glob_csv_pattern)))
+            if len(csv_paths) == 0:
+                raise DataLogAnalyserBase.NoFilesException(
+                    'No *.csv files found in "{}"'.format(self.cvs_directory))
+        else:
+            csv_paths = [Path(self.cvs_directory).joinpath(file) for file in self.cvs_file_names]
         for file in csv_paths:
             log.debug('Reading file %s', file)
+            if not Path(file).exists():
+                raise DataLogAnalyserBase.NoFilesException(
+                    'csv file not found: "{}"'.format(file))
             try:
                 yield self._process_df(
                     pd.read_csv(file, **self.read_csv_kwargs),
@@ -53,6 +61,13 @@ class DataLogAnalyserBase(ABC):
             except pd.errors.ParserError:
                 log.exception('Error Reading file %s', file)
                 continue
+
+    def sanitize_data_and_write_to_csv(self, file):
+        write_csv_header = True
+        for df in self._read_csv_logs():
+            log.debug('Writing df to file %s', file)
+            df.to_csv(file, index=False, mode='a', header=write_csv_header)
+            write_csv_header = False
 
     def plot_scatter_graph(self, x, y, title, save=True, display=False):
         if not set(self.columns).issuperset((x, y)):
@@ -64,13 +79,13 @@ class DataLogAnalyserBase(ABC):
         if display:
             plt.show()
         if save:
-            filename = '{time}-{uuid}-{x}-{y}.png'.format(
+            file = '{time}-{uuid}-{x}-{y}.png'.format(
                 time=time.strftime("%Y%m%d-%H%M"),
                 uuid=uuid.uuid4().hex[:8],
                 x=x.replace(' ', '_'),
                 y=y.replace(' ', '_'),)
-            log.info('Saving as "{}"'.format(filename))
-            ax.get_figure().savefig(filename)
+            log.info('Saving as "{}"'.format(file))
+            ax.get_figure().savefig(file)
 
 
 class FutureEnergyDataLogAnalyser(DataLogAnalyserBase):
@@ -93,6 +108,7 @@ class FutureEnergyDataLogAnalyser(DataLogAnalyserBase):
             'warn_bad_lines': False,
         }
         super().__init__(_options, _column_definition, _read_csv_kwargs)
+        self.glob_csv_pattern = '*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9].csv'
 
     def _process_df(self, df):
         # strict parse datetime columns
@@ -120,7 +136,7 @@ if __name__ == '__main__':
     log.info('Args %s', args)
 
     options = {
-        'cvs_directory': os.path.abspath(args.cvs_directory),
+        'cvs_directory': Path(args.cvs_directory).absolute(),
     }
     analyser = FutureEnergyDataLogAnalyser(options)
     analyser.plot_scatter_graph(x='Windspeed MPS',
