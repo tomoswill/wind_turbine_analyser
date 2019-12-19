@@ -17,12 +17,13 @@ logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 
 class DataLogAnalyserBase(ABC):
     """The Data Log Analyser Base"""
+    GLOB_CSV_PATTERN = '*.csv'
+
     def __init__(self, _options, _column_definition, _read_csv_kwargs):
         self.cvs_directory = _options['cvs_directory']
-        self.cvs_file_names = _options['cvs_file_names'] if 'cvs_file_names' in _options else None
+        self.cvs_filenames = _options['cvs_filenames'] if 'cvs_filenames' in _options else None
         self.column_definition = _column_definition
         self.read_csv_kwargs = _read_csv_kwargs
-        self.glob_csv_pattern = '*.csv'
 
     @property
     def columns(self):
@@ -42,13 +43,13 @@ class DataLogAnalyserBase(ABC):
         return [col for col, t in self.column_definition.items() if t == ty]
 
     def _read_csv_logs(self):
-        if self.cvs_file_names is None:
-            csv_paths = list(sorted(Path(self.cvs_directory).glob(self.glob_csv_pattern)))
+        if self.cvs_filenames is None:
+            csv_paths = list(sorted(Path(self.cvs_directory).glob(self.GLOB_CSV_PATTERN)))
             if len(csv_paths) == 0:
                 raise DataLogAnalyserBase.NoFilesException(
                     'No *.csv files found in "{}"'.format(self.cvs_directory))
         else:
-            csv_paths = [Path(self.cvs_directory).joinpath(file) for file in self.cvs_file_names]
+            csv_paths = [Path(self.cvs_directory).joinpath(file) for file in self.cvs_filenames]
         for file in csv_paths:
             log.debug('Reading file %s', file)
             if not Path(file).exists():
@@ -90,6 +91,8 @@ class DataLogAnalyserBase(ABC):
 
 class FutureEnergyDataLogAnalyser(DataLogAnalyserBase):
     """The Future Energy Wind Turbine Data Log Analyser"""
+    GLOB_CSV_PATTERN = '*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9].csv'
+
     def __init__(self, _options):
         _column_definition = {
             'Date_Time': 'datetime',
@@ -108,7 +111,6 @@ class FutureEnergyDataLogAnalyser(DataLogAnalyserBase):
             'warn_bad_lines': False,
         }
         super().__init__(_options, _column_definition, _read_csv_kwargs)
-        self.glob_csv_pattern = '*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9].csv'
 
     def _process_df(self, df):
         # strict parse datetime columns

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<head>
+   <title>Future Energy Wind Turbine Data Analyser</title>
+   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+</head>
+<body>
+    <div class="container">
+        <h1>Future Energy Wind Turbine Data Analyser</h1>
+        <br>
+        <h3>Generate Sanitized CSV file</h3>
+        <form method="post" action="/sanitize_data">
+            <div class="form-group row">
+                <label for="start_csv">Start CSV Name:</label>
+                <select class="form-control" name="start_csv">
+                    {% for name in cvs_filenames %}
+                    <option value= "{{name}}" {% if name == default_start_csv %} selected {% endif %}>{{name}}</option>"
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group row">
+                <label for="end_csv">End CSV Name:</label>
+                <select class="form-control" name="end_csv">
+                    {% for name in cvs_filenames %}
+                    <option value= "{{name}}" {% if name == default_end_csv %} selected {% endif %}>{{name}}</option>"
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group row">
+                <label for="exampleInputPassword1">Password</label>
+                <input type="password" class="form-control" name="password">
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+</body>
