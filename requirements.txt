@@ -1,4 +1,5 @@
 pandas
 matplotlib
 flask
+Flask-Caching
 flake8
