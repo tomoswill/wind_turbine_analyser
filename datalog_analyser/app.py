@@ -5,7 +5,7 @@ from pathlib import Path
 from flask import Flask, render_template, request
 from flask_caching import Cache
 
-from datalog_analyser import FutureEnergyDataLogAnalyser
+from .datalog_analyser import FutureEnergyDataLogAnalyser
 
 APP = Flask(__name__)
 cache = Cache(config={'CACHE_TYPE': 'simple', "CACHE_DEFAULT_TIMEOUT": 300})

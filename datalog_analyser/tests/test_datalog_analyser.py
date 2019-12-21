@@ -5,7 +5,7 @@ import logging
 import sys
 from io import StringIO
 import pandas as pd
-from datalog_analyser import FutureEnergyDataLogAnalyser
+from ..datalog_analyser import FutureEnergyDataLogAnalyser
 
 log = logging.getLogger('FutureEnergyDataLogAnalyserTest')
 log.setLevel(logging.DEBUG)

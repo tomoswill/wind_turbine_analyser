@@ -3,8 +3,8 @@ An (unofficial) tool to parse a directory of *.cvs files, process and concatenat
 ## Datalog Analyser plot tool
 Example usage: plots values to a scatter diagram of Windspeed vs. Power.
 ```
-> python3 datalog_analyser.py -h
-usage: datalog_analyser.py [-h] --cvs_dir CVS_DIRECTORY
+> python3 plot.py -h
+usage: plot.py [-h] --cvs_dir CVS_DIRECTORY
 
 The Future Energy Wind Turbine Data Log Analyser
 
@@ -21,13 +21,13 @@ TBC
 A web application to remotely parse a directory of *.cvs files, process and concatenate the data.
 #### HTTPS (recommended)
 ```
-gunicorn --bind=0.0.0.0:8443 --certfile=cert.pem --keyfile=key.pem app:APP
+gunicorn --bind=0.0.0.0:8443 --certfile=cert.pem --keyfile=key.pem datalog_analyser.app:APP
 ```
 On linux can create self-signed certificates
 > openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj '/CN=localhost'
 #### HTTP
 ```
-gunicorn --bind=0.0.0.0:8000 app:APP
+gunicorn --bind=0.0.0.0:8000 datalog_analyser.app:APP
 ```
 ## Installation
 ### Linux
@@ -43,6 +43,6 @@ https://virtualenvwrapper.readthedocs.io/en/latest/
 ## Development
 Run unittests & flake8
 ```
-python3 datalog_analyser_unittest.py
-flake8 datalog_analyser.py
+python -m unittest
+flake8 datalog_analyser/datalog_analyser.py
 ```
