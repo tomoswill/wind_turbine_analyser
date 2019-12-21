@@ -7,14 +7,14 @@ from flask_caching import Cache
 
 from datalog_analyser import FutureEnergyDataLogAnalyser
 
-app = Flask(__name__)
+APP = Flask(__name__)
 cache = Cache(config={'CACHE_TYPE': 'simple', "CACHE_DEFAULT_TIMEOUT": 300})
-cache.init_app(app)
+cache.init_app(APP)
 
 CVS_DIR = getenv('CVS_DIR')
 
 
-@app.route('/')
+@APP.route('/')
 @cache.cached(timeout=60)
 def homepage():
     cvs_filenames = get_cvs_filenames()
@@ -28,7 +28,7 @@ def homepage():
                            default_end_csv=default_end_csv)
 
 
-@app.route('/process_data', methods=['POST'])
+@APP.route('/process_data', methods=['POST'])
 def process_data():
     data = request.form
     source = get_cvs_filenames()
@@ -54,4 +54,4 @@ def get_cvs_filenames():
 
 
 if __name__ == '__main__':
-    app.run()
+    APP.run(debug=True)

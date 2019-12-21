@@ -2,4 +2,5 @@ pandas
 matplotlib
 flask
 Flask-Caching
+gunicorn
 flake8

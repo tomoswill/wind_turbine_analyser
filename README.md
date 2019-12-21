@@ -13,6 +13,18 @@ optional arguments:
   --save                Output the plot to PNG
   --no-display          Do not interactively display the plot
 ```
+## Web App
+#### Create certificate
+
+```
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj '/CN=localhost'
+```
+
+#### Run under gunicorn with SSL
+
+```
+gunicorn --bind=0.0.0.0:8443 --certfile=cert.pem --keyfile=key.pem app:APP
+```
 ## Installation
 ### Linux
 ```
