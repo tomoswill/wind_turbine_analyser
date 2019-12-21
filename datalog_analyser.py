@@ -63,12 +63,13 @@ class DataLogAnalyserBase(ABC):
                 log.exception('Error Reading file %s', file)
                 continue
 
-    def sanitize_data_and_write_to_csv(self, file):
+    def process_data_and_write_to_csv(self, file):
         write_csv_header = True
         for df in self._read_csv_logs():
             log.debug('Writing df to file %s', file)
             df.to_csv(file, index=False, mode='a', header=write_csv_header)
             write_csv_header = False
+        log.info('Done writing df to file %s', file)
 
     def plot_scatter_graph(self, x, y, title, save=True, display=False):
         if not set(self.columns).issuperset((x, y)):
@@ -91,7 +92,7 @@ class DataLogAnalyserBase(ABC):
 
 class FutureEnergyDataLogAnalyser(DataLogAnalyserBase):
     """The Future Energy Wind Turbine Data Log Analyser"""
-    GLOB_CSV_PATTERN = '*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9].csv'
+    GLOB_CSV_PATTERN = '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9].csv'
 
     def __init__(self, _options):
         _column_definition = {

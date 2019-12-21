@@ -2,7 +2,6 @@ import threading
 from os import getenv
 from pathlib import Path
 
-import time
 from flask import Flask, render_template, request
 from flask_caching import Cache
 
@@ -19,6 +18,8 @@ CVS_DIR = getenv('CVS_DIR')
 @cache.cached(timeout=60)
 def homepage():
     cvs_filenames = get_cvs_filenames()
+    if len(cvs_filenames) == 0:
+        return 'Error: No csv files found'
     default_start_csv = cvs_filenames[0]
     default_end_csv = cvs_filenames[-1]
     return render_template('index.html',
@@ -27,23 +28,24 @@ def homepage():
                            default_end_csv=default_end_csv)
 
 
-@app.route('/sanitize_data', methods=['POST'])
-def generate_sanitized():
+@app.route('/process_data', methods=['POST'])
+def process_data():
     data = request.form
-    cvs_filenames = get_cvs_filenames()
-    cvs_filenames[:] = cvs_filenames[cvs_filenames.index(data['start_csv']): cvs_filenames.index(data['end_csv']) + 1]
-
-    def _process_csv(files):
-        analyser = FutureEnergyDataLogAnalyser({
-            'cvs_directory': CVS_DIR,
-            'cvs_filenames': files,
-        })
-        analyser.sanitize_data_and_write_to_csv(
-            file=Path(CVS_DIR).joinpath('sanitized-{time}.csv'.format(time=time.strftime("%Y%m%d-%H%M"))),
-        )
-
-    threading.Thread(target=_process_csv, args=(cvs_filenames,)).start()
-    return 'Done!'
+    source = get_cvs_filenames()
+    source[:] = source[source.index(data['start_csv']): source.index(data['end_csv']) + 1]
+    target = Path(CVS_DIR).joinpath('processed_{start}_{end}.csv'.format(
+        start=source[0].split('.')[0], end=source[-1].split('.')[0]))
+    if not Path(target).exists():
+        def _process_csv():
+            analyser = FutureEnergyDataLogAnalyser({
+                'cvs_directory': CVS_DIR,
+                'cvs_filenames': source,
+            })
+            analyser.process_data_and_write_to_csv(
+                file=target,
+            )
+        threading.Thread(target=_process_csv).start()
+    return 'Written to: ' + str(target)
 
 
 def get_cvs_filenames():
