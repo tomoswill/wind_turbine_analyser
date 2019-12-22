@@ -19,7 +19,7 @@ TASKS = []
 @APP.route('/')
 @cache.cached(timeout=60)
 def homepage():
-    cvs_filenames = get_cvs_filenames()
+    cvs_filenames = get_raw_cvs_filenames()
     if len(cvs_filenames) == 0:
         return 'Error: No csv files found'
     default_start_csv = cvs_filenames[0]
@@ -27,13 +27,14 @@ def homepage():
     return render_template('index.html',
                            cvs_filenames=cvs_filenames,
                            default_start_csv=default_start_csv,
-                           default_end_csv=default_end_csv)
+                           default_end_csv=default_end_csv,
+                           processed_csv=get_processed_cvs_filenames())
 
 
 @APP.route('/process_data', methods=['POST'])
 def process_data():
     data = request.form
-    source = get_cvs_filenames()
+    source = get_raw_cvs_filenames()
     source[:] = source[source.index(data['start_csv']): source.index(data['end_csv']) + 1]
     target = Path(CVS_DIR).joinpath('processed_{start}_{end}.csv'.format(
         start=source[0].split('.')[0], end=source[-1].split('.')[0]))
@@ -47,6 +48,7 @@ def process_data():
             analyser.process_data_and_write_to_csv(
                 file=target,
             )
+            cache.clear()
         task_id = str(uuid.uuid4())
         task = threading.Thread(target=_process_csv, name=task_id)
         TASKS.append(task)
@@ -66,8 +68,13 @@ def tasks(task_id):
         return make_response(jsonify([_task_status(task) for task in TASKS if task.name == task_id]))
 
 
-def get_cvs_filenames():
+def get_raw_cvs_filenames():
     cvs_paths = sorted(Path(CVS_DIR).glob(FutureEnergyDataLogAnalyser.GLOB_CSV_PATTERN))
+    return [path.name for path in cvs_paths]
+
+
+def get_processed_cvs_filenames():
+    cvs_paths = sorted(Path(CVS_DIR).glob('processed_*.csv'))
     return [path.name for path in cvs_paths]
 
 
