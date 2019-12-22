@@ -1,8 +1,9 @@
 import threading
+import uuid
 from os import getenv
 from pathlib import Path
 
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, make_response, jsonify
 from flask_caching import Cache
 
 from .datalog_analyser import FutureEnergyDataLogAnalyser
@@ -12,6 +13,7 @@ cache = Cache(config={'CACHE_TYPE': 'simple', "CACHE_DEFAULT_TIMEOUT": 300})
 cache.init_app(APP)
 
 CVS_DIR = getenv('CVS_DIR')
+TASKS = []
 
 
 @APP.route('/')
@@ -35,6 +37,7 @@ def process_data():
     source[:] = source[source.index(data['start_csv']): source.index(data['end_csv']) + 1]
     target = Path(CVS_DIR).joinpath('processed_{start}_{end}.csv'.format(
         start=source[0].split('.')[0], end=source[-1].split('.')[0]))
+    task_id = None
     if not Path(target).exists():
         def _process_csv():
             analyser = FutureEnergyDataLogAnalyser({
@@ -44,8 +47,23 @@ def process_data():
             analyser.process_data_and_write_to_csv(
                 file=target,
             )
-        threading.Thread(target=_process_csv).start()
-    return 'Written to: ' + str(target)
+        task_id = str(uuid.uuid4())
+        task = threading.Thread(target=_process_csv, name=task_id)
+        TASKS.append(task)
+        task.start()
+    return make_response(jsonify({'task_id': task_id, 'target': target.name}))
+
+
+@APP.route('/tasks', defaults={'task_id': None}, methods=['GET'])
+@APP.route('/tasks/<task_id>', methods=['GET'])
+def tasks(task_id):
+    def _task_status(task):
+        return {'task_id': task.name, 'complete': not task.isAlive()}
+
+    if task_id is None:
+        return make_response(jsonify([_task_status(task) for task in TASKS]))
+    else:
+        return make_response(jsonify([_task_status(task) for task in TASKS if task.name == task_id]))
 
 
 def get_cvs_filenames():
