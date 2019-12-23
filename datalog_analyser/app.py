@@ -1,9 +1,10 @@
 import threading
 import uuid
+from http import HTTPStatus
 from os import getenv
 from pathlib import Path
 
-from flask import Flask, render_template, request, make_response, jsonify
+from flask import Flask, render_template, request, make_response, jsonify, send_from_directory
 from flask_caching import Cache
 
 from .datalog_analyser import FutureEnergyDataLogAnalyser
@@ -66,6 +67,14 @@ def tasks(task_id):
         return make_response(jsonify([_task_status(task) for task in TASKS]))
     else:
         return make_response(jsonify([_task_status(task) for task in TASKS if task.name == task_id]))
+
+
+@APP.route('/download/<path:filename>', methods=['GET', 'POST'])
+def download(filename):
+    if filename in get_processed_cvs_filenames():
+        return send_from_directory(directory=Path(CVS_DIR), filename=filename, as_attachment=True)
+    else:
+        return make_response('<h1>Not found</h1>', HTTPStatus.NOT_FOUND)
 
 
 def get_raw_cvs_filenames():
