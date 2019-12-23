@@ -4,7 +4,7 @@ from http import HTTPStatus
 from os import getenv
 from pathlib import Path
 
-from flask import Flask, render_template, request, make_response, jsonify, send_from_directory
+from flask import Flask, render_template, request, make_response, jsonify, send_from_directory, redirect, url_for
 from flask_caching import Cache
 
 from .datalog_analyser import FutureEnergyDataLogAnalyser
@@ -19,10 +19,10 @@ TASKS = []
 
 @APP.route('/')
 @cache.cached(timeout=60)
-def homepage():
+def home():
     cvs_filenames = get_raw_cvs_filenames()
     if len(cvs_filenames) == 0:
-        return 'Error: No csv files found'
+        return make_response('<h1>Error: No csv files found</h1>', HTTPStatus.INTERNAL_SERVER_ERROR)
     default_start_csv = cvs_filenames[0]
     default_end_csv = cvs_filenames[-1]
     return render_template('index.html',
@@ -73,8 +73,17 @@ def tasks(task_id):
 def download(filename):
     if filename in get_processed_cvs_filenames():
         return send_from_directory(directory=Path(CVS_DIR), filename=filename, as_attachment=True)
-    else:
-        return make_response('<h1>Not found</h1>', HTTPStatus.NOT_FOUND)
+    return make_response('<h1>Not found</h1>', HTTPStatus.NOT_FOUND)
+
+
+@APP.route('/remove/<path:filename>', methods=['GET', 'POST'])
+def remove(filename):
+    path = Path(CVS_DIR).joinpath(filename)
+    if filename in get_processed_cvs_filenames() and path.exists():
+        path.unlink()
+        cache.clear()
+        return redirect(url_for('home'), code=HTTPStatus.FOUND)
+    return make_response('<h1>Not found</h1>', HTTPStatus.NOT_FOUND)
 
 
 def get_raw_cvs_filenames():
