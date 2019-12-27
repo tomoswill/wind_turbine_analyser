@@ -1,7 +1,7 @@
 import threading
 import uuid
 from http import HTTPStatus
-from os import getenv
+from os import getenv, environ
 from pathlib import Path
 
 from flask import Flask, render_template, request, make_response, jsonify, send_from_directory, redirect, url_for
@@ -11,16 +11,16 @@ from flask_login import LoginManager, login_required, UserMixin, current_user, l
 from .datalog_analyser import FutureEnergyDataLogAnalyser
 
 APP = Flask(__name__)
-APP.secret_key = 'super secret string'  # Change this!
 
 cache = Cache(config={'CACHE_TYPE': 'simple', "CACHE_DEFAULT_TIMEOUT": 300})
 cache.init_app(APP)
 login_manager = LoginManager()
 login_manager.init_app(APP)
-
-CVS_DIR = getenv('CVS_DIR')
 TASKS = []
-USERS = {'admin': {'password': '1'}}
+
+CVS_DIR = environ['CVS_DIR']
+APP.secret_key = getenv('APP_SECRET_KEY', default='DEV')
+USERS = {'admin': {'password': getenv('ADMIN_PASSWORD', default='password')}}
 
 
 @APP.route('/')
