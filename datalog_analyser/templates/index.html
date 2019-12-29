@@ -1,4 +1,20 @@
 {% extends "base.html" %}
+{% block head %}
+<script>
+$(document).ready(function(){
+    $("#exampleModal").on("show.bs.modal", function(event){
+        // Get the button that triggered the modal
+        var button = $(event.relatedTarget);
+
+        // Extract value from the custom data-* attribute
+        var removalUrlData = button.data("removal-url");
+        $(this).find("button.btn.btn-primary").attr("formaction", removalUrlData);
+    });
+});
+
+
+</script>
+{% endblock %}
 {% block content %}
 <h4>Generate concatenated CSV file</h4>
 <form method="post" action="/process_data">
@@ -39,7 +55,8 @@
     <tr>
         <td><a href="download/{{ row }}">{{ row }}</a></td>
         <td>
-            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal">
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal"
+                    data-removal-url="remove/{{ row }}">
                 Remove
             </button>
         </td>
@@ -63,7 +80,11 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary">Remove</button>
+                <form>
+                    <button type="submit" class="btn btn-primary" formmethod="post" formaction="#">
+                        Remove
+                    </button>
+                </form>
             </div>
         </div>
     </div>

@@ -78,7 +78,7 @@ def tasks(task_id):
         return make_response(jsonify([_task_status(task) for task in TASKS if task.name == task_id]))
 
 
-@APP.route('/download/<path:filename>', methods=['GET', 'POST'])
+@APP.route('/download/<path:filename>', methods=['GET'])
 @login_required
 def download(filename):
     if filename in get_processed_cvs_filenames():
@@ -86,7 +86,7 @@ def download(filename):
     return make_response('<h1>Not found</h1>', HTTPStatus.NOT_FOUND)
 
 
-@APP.route('/remove/<path:filename>', methods=['GET', 'POST'])
+@APP.route('/remove/<path:filename>', methods=['POST'])
 @login_required
 def remove(filename):
     path = Path(CVS_DIR).joinpath(filename)
