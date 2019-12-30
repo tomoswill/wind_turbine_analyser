@@ -1,26 +1,32 @@
+import logging
 import threading
 import uuid
 from http import HTTPStatus
-from os import getenv, environ
+from os import environ
 from pathlib import Path
 
 from flask import Flask, render_template, request, make_response, jsonify, send_from_directory, redirect, url_for
 from flask_caching import Cache
-from flask_login import LoginManager, login_required, UserMixin, current_user, logout_user, login_user
+from flask_login import LoginManager, login_required, UserMixin, logout_user, login_user
 
 from .datalog_analyser import FutureEnergyDataLogAnalyser
 
 APP = Flask(__name__)
 
+LOG = logging.getLogger('DataLogAnalyserWeb')
+LOG.setLevel(logging.DEBUG)
+
+# Environment
+CVS_DIR = environ['CVS_DIR']
+APP.secret_key = environ.get('APP_SECRET_KEY', default='DEV')
+USERS = {'admin': {'password': environ.get('ADMIN_PASSWORD', default='password')}}
+LOG.debug(f'Booting with CVS_DIR:{CVS_DIR} secret:{APP.secret_key}')
+
 cache = Cache(config={'CACHE_TYPE': 'simple', "CACHE_DEFAULT_TIMEOUT": 300})
 cache.init_app(APP)
+
 login_manager = LoginManager()
 login_manager.init_app(APP)
-TASKS = []
-
-CVS_DIR = environ['CVS_DIR']
-APP.secret_key = getenv('APP_SECRET_KEY', default='DEV')
-USERS = {'admin': {'password': getenv('ADMIN_PASSWORD', default='password')}}
 
 
 @APP.route('/')
@@ -49,33 +55,32 @@ def process_data():
         start=source[0].split('.')[0], end=source[-1].split('.')[0]))
     task_id = None
     if not Path(target).exists():
-        def _process_csv():
+        def _process_csv(task_id):
             analyser = FutureEnergyDataLogAnalyser({
                 'cvs_directory': CVS_DIR,
                 'cvs_filenames': source,
             })
+            temp_file = Path(CVS_DIR).joinpath(f'{task_id}.task_id')
             analyser.process_data_and_write_to_csv(
-                file=target,
+                file=temp_file,
             )
+            temp_file.replace(target)
             cache.clear()
         task_id = str(uuid.uuid4())
-        task = threading.Thread(target=_process_csv, name=task_id)
-        TASKS.append(task)
+        task = threading.Thread(target=_process_csv, args=(task_id,), name=task_id)
+        LOG.info(f'Starting task {task_id} for {target.name}')
         task.start()
     return make_response(jsonify({'task_id': task_id, 'target': target.name}))
 
 
-@APP.route('/tasks', defaults={'task_id': None}, methods=['GET'])
-@APP.route('/tasks/<task_id>', methods=['GET'])
+@APP.route('/active-tasks', defaults={'task_id': None}, methods=['GET'])
+@APP.route('/active-tasks/<task_id>', methods=['GET'])
 @login_required
 def tasks(task_id):
-    def _task_status(task):
-        return {'task_id': task.name, 'complete': not task.isAlive()}
-
     if task_id is None:
-        return make_response(jsonify([_task_status(task) for task in TASKS]))
+        return make_response(jsonify([{'task_id': task} for task in get_active_tasks()]))
     else:
-        return make_response(jsonify([_task_status(task) for task in TASKS if task.name == task_id]))
+        return make_response(jsonify([{'task_id': task} for task in get_active_tasks() if task == task_id]))
 
 
 @APP.route('/download/<path:filename>', methods=['GET'])
@@ -124,6 +129,11 @@ def get_raw_cvs_filenames():
 def get_processed_cvs_filenames():
     cvs_paths = sorted(Path(CVS_DIR).glob('processed_*.csv'))
     return [path.name for path in cvs_paths]
+
+
+def get_active_tasks():
+    task_paths = Path(CVS_DIR).glob('*.task_id')
+    return [path.stem for path in task_paths]
 
 
 class User(UserMixin):
