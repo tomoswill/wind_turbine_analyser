@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% block head %}
 <script>
-$(document).ready(function(){
-    $("#exampleModal").on("show.bs.modal", function(event){
+$(document).ready(function() {
+    $("#exampleModal").on("show.bs.modal", function(event) {
         // Get the button that triggered the modal
         var button = $(event.relatedTarget);
 
@@ -12,12 +12,43 @@ $(document).ready(function(){
     });
 });
 
+$(document).ready(function() {
+    $("#submit-generate-csv").click(function() {
+        // disable button
+        $(this).prop("disabled", true);
+        // add spinner to button
+        $(this).html(
+            `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...`
+        );
+        // post the data
+        $.post("/process_data", $("#form-generate-csv").serialize())
+            .done(function(response) {
+                var task_id = response.task_id
+                //var target = response.target
+                if (task_id != null) {
+                    var poll_task = setInterval(
+                        function() {
+                            $.get("/active-tasks/" + task_id)
+                                .done(function(data) {
+                                    if (typeof data[0] === "undefined" || data[0].task_id != task_id) {
+                                        clearInterval(poll_task);
+                                        window.location.replace('/');
+                                    }
+                                }, "json");
+                        }, 1000);
+                } else {
+                    window.location.replace('/');
+                }
+            }, "json");
+    });
+});
+
 
 </script>
 {% endblock %}
 {% block content %}
 <h4>Generate concatenated CSV file</h4>
-<form method="post" action="/process_data">
+<form id="form-generate-csv">
     <div class="form-row">
         <div class="col">
             <label for="start_csv">Start CSV Name:</label>
@@ -39,7 +70,7 @@ $(document).ready(function(){
         </div>
     </div>
     <br>
-    <button type="submit" class="btn btn-primary">Submit</button>
+    <button type="button" id="submit-generate-csv" class="btn btn-primary">Submit</button>
 </form>
 <br>
 <h4>List of concatenated CSV files</h4>
