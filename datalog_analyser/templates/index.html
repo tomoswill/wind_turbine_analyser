@@ -2,13 +2,13 @@
 {% block head %}
 <script>
 $(document).ready(function() {
-    $("#exampleModal").on("show.bs.modal", function(event) {
+    $("#removalModal").on("show.bs.modal", function(event) {
         // Get the button that triggered the modal
         var button = $(event.relatedTarget);
 
         // Extract value from the custom data-* attribute
         var removalUrlData = button.data("removal-url");
-        $(this).find("button.btn.btn-primary").attr("formaction", removalUrlData);
+        $(this).find("button.btn.btn-danger").attr("formaction", removalUrlData);
     });
 });
 
@@ -24,7 +24,7 @@ $(document).ready(function() {
         $.post("/process_data", $("#form-generate-csv").serialize())
             .done(function(response) {
                 var task_id = response.task_id
-                //var target = response.target
+                var target = response.target
                 if (task_id != null) {
                     var poll_task = setInterval(
                         function() {
@@ -32,16 +32,18 @@ $(document).ready(function() {
                                 .done(function(data) {
                                     if (typeof data[0] === "undefined" || data[0].task_id != task_id) {
                                         clearInterval(poll_task);
-                                        window.location.replace('/');
+                                        window.location.replace('/?target=' + target);
                                     }
                                 }, "json");
                         }, 1000);
                 } else {
-                    window.location.replace('/');
+                    window.location.replace('/?target=' + target);
                 }
             }, "json");
     });
 });
+
+
 
 
 </script>
@@ -84,11 +86,18 @@ $(document).ready(function() {
     <tbody>
     {% for row in processed_csv %}
     <tr>
-        <td><a href="download/{{ row }}">{{ row }}</a></td>
         <td>
-            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal"
-                    data-removal-url="remove/{{ row }}">
-                Remove
+            {% if row == target_cvs %}
+            <div class="alert alert-success" role="alert">
+                <a href="download/{{ row }}" class="alert-link">{{ row }}</a>
+            </div>
+            {% else %}
+            <a href="download/{{ row }}">{{ row }}</a>
+            {% endif %}
+        </td>
+        <td>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#removalModal"
+                    data-removal-url="remove/{{ row }}">Remove
             </button>
         </td>
     </tr>
@@ -96,12 +105,12 @@ $(document).ready(function() {
     </tbody>
 </table>
 <!-- Modal -->
-<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+<div class="modal fade" id="removalModal" tabindex="-1" role="dialog" aria-labelledby="removalModalLabel"
      aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">File Deletion</h5>
+                <h5 class="modal-title" id="removalModalLabel">File Deletion</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -112,7 +121,7 @@ $(document).ready(function() {
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                 <form>
-                    <button type="submit" class="btn btn-primary" formmethod="post" formaction="#">
+                    <button type="submit" class="btn btn-danger" formmethod="post" formaction="#">
                         Remove
                     </button>
                 </form>

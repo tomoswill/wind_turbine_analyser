@@ -31,18 +31,19 @@ login_manager.init_app(APP)
 
 @APP.route('/')
 @login_required
-@cache.cached(timeout=60)
 def home():
     cvs_filenames = get_raw_cvs_filenames()
     if len(cvs_filenames) == 0:
         return make_response('<h1>Error: No csv files found</h1>', HTTPStatus.INTERNAL_SERVER_ERROR)
     default_start_csv = cvs_filenames[0]
     default_end_csv = cvs_filenames[-1]
+    target_cvs = request.args.get('target', default=None, type=str)
     return render_template('index.html',
                            cvs_filenames=cvs_filenames,
                            default_start_csv=default_start_csv,
                            default_end_csv=default_end_csv,
-                           processed_csv=get_processed_cvs_filenames())
+                           processed_csv=get_processed_cvs_filenames(),
+                           target_cvs=target_cvs)
 
 
 @APP.route('/process_data', methods=['POST'])
@@ -121,6 +122,7 @@ def logout():
     return redirect(url_for('login'), code=HTTPStatus.FOUND)
 
 
+@cache.cached(timeout=60, key_prefix='raw_cvs_filenames')
 def get_raw_cvs_filenames():
     cvs_paths = sorted(Path(CVS_DIR).glob(FutureEnergyDataLogAnalyser.GLOB_CSV_PATTERN))
     return [path.name for path in cvs_paths]
