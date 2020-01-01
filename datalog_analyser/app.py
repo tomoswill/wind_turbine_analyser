@@ -9,6 +9,7 @@ from flask import Flask, render_template, request, make_response, jsonify, send_
 from flask_caching import Cache
 from flask_login import LoginManager, login_required, UserMixin, logout_user, login_user
 
+from .auth_utils import hash_password, verify_password
 from .datalog_analyser import FutureEnergyDataLogAnalyser
 
 APP = Flask(__name__)
@@ -19,7 +20,11 @@ LOG.setLevel(logging.DEBUG)
 # Environment
 CVS_DIR = environ['CVS_DIR']
 APP.secret_key = environ.get('APP_SECRET_KEY', default='DEV')
-USERS = {'admin': {'password': environ.get('ADMIN_PASSWORD', default='password')}}
+USERS = {
+    'admin': {
+        'password': hash_password(environ.get('ADMIN_PASSWORD', default='password'))
+    }
+}
 LOG.debug(f'Booting with CVS_DIR:{CVS_DIR} secret:{APP.secret_key}')
 
 cache = Cache(config={'CACHE_TYPE': 'simple', "CACHE_DEFAULT_TIMEOUT": 300})
@@ -107,12 +112,12 @@ def remove(filename):
 def login():
     if request.method == 'GET':
         return render_template('login.html')
-
-    email = request.form['email']
-    if request.form['password'] == USERS[email]['password']:
-        user = User()
-        user.id = email
-        login_user(user)
+    elif request.method == 'POST':
+        username = request.form['username']
+        if verify_password(USERS[username]['password'], request.form['password']):
+            user = User()
+            user.id = username
+            login_user(user)
     return redirect(url_for('home'))
 
 
@@ -143,28 +148,11 @@ class User(UserMixin):
 
 
 @login_manager.user_loader
-def user_loader(email):
-    if email not in USERS:
+def user_loader(username):
+    if username not in USERS:
         return
-
     user = User()
-    user.id = email
-    return user
-
-
-@login_manager.request_loader
-def request_loader(request):
-    email = request.form.get('email')
-    if email not in USERS:
-        return
-
-    user = User()
-    user.id = email
-
-    # DO NOT ever store passwords in plaintext and always compare password
-    # hashes using constant-time comparison!
-    user.is_authenticated = request.form['password'] == USERS[email]['password']
-
+    user.id = username
     return user
 
 
