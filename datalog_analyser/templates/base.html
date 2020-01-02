@@ -24,6 +24,18 @@
 <body>
 <div class="container">
     <h1>Future Energy Wind Turbine Data Analyser</h1>
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <a class="nav-link {% if 'index' == active_page %}active{% endif %}" href="/">Home</a>
+        </li>
+        <li class="nav-item">
+            {% if current_user.is_authenticated %}
+            <a class="nav-link" href="/logout">Logout</a>
+            {% else %}
+            <a class="nav-link {% if 'login' == active_page %}active{% endif %}" href="/login">Login</a>
+            {% endif %}
+        </li>
+    </ul>
     <br>
     {% block content %}{% endblock %}
 </div>
