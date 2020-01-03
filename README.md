@@ -33,13 +33,22 @@ gunicorn --bind=0.0.0.0:8000 datalog_analyser.app:APP
 ### Linux
 ```
 pip3 install -r requirements.txt
+export CVS_DIR=< full path to cvs directory to process >
+export APP_SECRET_KEY=< a random passphrase used for cryptography (default 'DEV') >
+export ADMIN_PASSWORD=< desired admin password for the web interface (default 'password') >
 ```
 > (recommended) Use a virtualenv, setup for python3
 https://virtualenvwrapper.readthedocs.io/en/latest/
 ### Windows (tested with Anaconda)
 1. Install Anaconda distribution for python3 https://www.anaconda.com/distribution/
 2. (recommended) create a clean Anaconda environment
-3. From Anaconda prompt ```pip install -r requirements.txt```
+3. From Anaconda prompt
+```
+pip install -r requirements.txt
+setx CVS_DIR "< full path to cvs directory to process >"
+setx APP_SECRET_KEY "< a random passphrase used for cryptography (default 'DEV') >"
+setx ADMIN_PASSWORD "< desired admin password for the web interface (default 'password') >"
+```
 ## Development
 Run unittests & flake8
 ```
