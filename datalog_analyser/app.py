@@ -39,7 +39,8 @@ login_manager.init_app(APP)
 def home():
     cvs_filenames = get_raw_cvs_filenames()
     if len(cvs_filenames) == 0:
-        return make_response('<h1>Error: No csv files found</h1>', HTTPStatus.INTERNAL_SERVER_ERROR)
+        LOG.warn(f'No csv files found with pattern "{FutureEnergyDataLogAnalyser.GLOB_CSV_PATTERN}"')
+        return render_template('index.html', processed_csv=get_processed_cvs_filenames())
     default_start_csv = cvs_filenames[0]
     default_end_csv = cvs_filenames[-1]
     target_cvs = request.args.get('target', default=None, type=str)

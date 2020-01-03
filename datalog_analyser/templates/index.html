@@ -43,10 +43,6 @@ $(document).ready(function() {
             }, "json");
     });
 });
-
-
-
-
 </script>
 {% endblock %}
 {% block content %}
@@ -73,7 +69,9 @@ $(document).ready(function() {
         </div>
     </div>
     <br>
-    <button type="button" id="submit-generate-csv" class="btn btn-primary">Submit</button>
+    <button type="button" id="submit-generate-csv" class="btn btn-primary"
+            {% if cvs_filenames is not defined %} disabled {% endif %}>Submit
+    </button>
 </form>
 <br>
 <h4>List of concatenated CSV files</h4>
