@@ -28,6 +28,7 @@ Date,Time,Windspeed MPS,Wind Direction,RPM,ref RPM,TSR,Power,Inhibit State,MPS u
 2019/08/22,06:00:38,2019/08/22,208,0,68,5.5,0,2,2,
 1,06:00:38,0.7,208,0,68,5.5,0,2,2,
 2019/08/22,1,2019/08/22,208,0,68,5.5,0,2,2,
+90,21:52:30,5.5,1.6,0,219,2,0,2,90,
         """)  # noqa: E501
         df = analyser._process_df(
             pd.read_csv(raw_data, **analyser.read_csv_kwargs),

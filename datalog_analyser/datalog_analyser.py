@@ -114,7 +114,9 @@ class FutureEnergyDataLogAnalyser(DataLogAnalyserBase):
     def _process_df(self, df):
         # strict parse datetime columns
         df['Date_Time'] = pd.to_datetime(
-            df['Date'] + ' ' + df['Time'], errors='coerce')
+            df['Date'] + ' ' + df['Time'], errors='coerce',
+            format='%Y/%m/%d %H:%M:%S',
+        )
         # strict parse numeric columns
         numeric_cols = self._columns_by_type('numeric')
         df[numeric_cols] = df[numeric_cols].apply(
