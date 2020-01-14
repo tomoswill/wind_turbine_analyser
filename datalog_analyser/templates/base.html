@@ -29,6 +29,9 @@
             <a class="nav-link {% if 'index' == active_page %}active{% endif %}" href="/">Home</a>
         </li>
         <li class="nav-item">
+            <a class="nav-link" target="_blank" href="https://github.com/tomoswill/wind_turbine_analyser">GitHub</a>
+        </li>
+        <li class="nav-item">
             {% if current_user.is_authenticated %}
             <a class="nav-link" href="/logout">Logout</a>
             {% else %}
