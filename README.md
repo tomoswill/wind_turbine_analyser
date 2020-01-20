@@ -1,6 +1,25 @@
 # The Future Energy Wind Turbine Data Log Analyser
-An (unofficial) tool to parse a directory of *.cvs files, process and concatenate the data. Can be easily expanded to sanitise cvs files from other sources.
-## Datalog Analyser plot tool
+An (unofficial) web application to remotely parse a directory of *.cvs files, process and concatenate the data. Can be easily expanded to sanitise cvs files from other sources.
+>![webapp screenshot](media/webapp.png)
+
+## Docker Web-App
+```
+ADMIN_PASSWORD=< desired admin password for the web interface (default 'password') >
+APP_SECRET_KEY=< a random passphrase used for cryptography (default 'DEV') >
+CVS_DIR=< full path to cvs directory to process >
+
+docker build \
+  --build-arg ADMIN_PASSWORD=$ADMIN_PASSWORD \
+  --build-arg APP_SECRET_KEY=$APP_SECRET_KEY \
+  --tag wind_turbine_analyser .
+
+docker run -p 8443:8443 -v $CVS_DIR:/cvs_dir wind_turbine_analyser
+```
+On the web browser navigate to either:
+* https://localhost:8443/
+* https://< ip address of server >:8443/
+
+## Datalog Analyser plot utility
 Example usage: plots values to a scatter diagram of Windspeed vs. Power.
 ```
 > python3 plot.py -h
@@ -15,43 +34,34 @@ optional arguments:
   --save                Output the plot to PNG
   --no-display          Do not interactively display the plot
 ```
-## Datalog Analyser concat tool
-TBC
-## Remote management Web-App
-A web application to remotely parse a directory of *.cvs files, process and concatenate the data.
-#### HTTPS (recommended)
-```
-gunicorn --bind=0.0.0.0:8443 --certfile=cert.pem --keyfile=key.pem datalog_analyser.app:APP
-```
-On linux can create self-signed certificates
-> openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj '/CN=localhost'
-#### HTTP
-```
-gunicorn --bind=0.0.0.0:8000 datalog_analyser.app:APP
-```
-## Installation
-### Linux
+
+## Development
+### Installation
 ```
 pip3 install -r requirements.txt
-export CVS_DIR=< full path to cvs directory to process >
-export APP_SECRET_KEY=< a random passphrase used for cryptography (default 'DEV') >
-export ADMIN_PASSWORD=< desired admin password for the web interface (default 'password') >
 ```
 > (recommended) Use a virtualenv, setup for python3
 https://virtualenvwrapper.readthedocs.io/en/latest/
-### Windows (tested with Anaconda)
-1. Install Anaconda distribution for python3 https://www.anaconda.com/distribution/
-2. (recommended) create a clean Anaconda environment
-3. From Anaconda prompt
-```
-pip install -r requirements.txt
-setx CVS_DIR "< full path to cvs directory to process >"
-setx APP_SECRET_KEY "< a random passphrase used for cryptography (default 'DEV') >"
-setx ADMIN_PASSWORD "< desired admin password for the web interface (default 'password') >"
-```
-## Development
-Run unittests & flake8
+### Tests
 ```
 python -m unittest
 flake8 datalog_analyser/datalog_analyser.py
+```
+
+### Web-App using HTTPS (recommended)
+Use ```start_datalog_analyser.sh``` to run or manually:
+```
+gunicorn --bind=0.0.0.0:8443 --certfile=localhost.crt --keyfile=localhost.key datalog_analyser.app:APP
+```
+On linux one can create self-signed certificates:
+```
+openssl req -x509 -out localhost.crt -keyout localhost.key \
+  -newkey rsa:2048 -nodes -sha256 \
+  -days 825 \
+  -subj '/CN=localhost' -extensions EXT -config <( \
+   printf "[dn]\nCN=localhost\n[req]\ndistinguished_name = dn\n[EXT]\nsubjectAltName=DNS:localhost\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth")
+```
+### Web-App using HTTP
+```
+gunicorn --bind=0.0.0.0:8000 datalog_analyser.app:APP
 ```
